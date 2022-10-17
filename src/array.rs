@@ -837,11 +837,11 @@ impl<'s> DualArray<'s> {
         assert_eq!(a.shape(), da.shape());
         let a_reshaped = a.reshape([input_shape[0], input_shape[1], 1, input_shape[2], 1, input_shape[3]]);
         let da_reshaped = da.reshape([input_shape[0], input_shape[1], 1, input_shape[2], 1, input_shape[3]]);
-        let a_broadcasted = a_reshaped.broadcast([input_shape[0], input_shape[1], x_grow_factor, input_shape[2], y_grow_factor, input_shape[3]]);
-        let da_broadcasted = da_reshaped.broadcast([input_shape[0], input_shape[1], x_grow_factor, input_shape[2], y_grow_factor, input_shape[3]]);
+        let a_broadcasted = a_reshaped.broadcast([input_shape[0], input_shape[1], y_grow_factor, input_shape[2], x_grow_factor, input_shape[3]]);
+        let da_broadcasted = da_reshaped.broadcast([input_shape[0], input_shape[1], y_grow_factor, input_shape[2], x_grow_factor, input_shape[3]]);
         let mut output_shape = input_shape;
-        output_shape[1] *= x_grow_factor;
         output_shape[2] *= y_grow_factor;
+        output_shape[1] *= x_grow_factor;
         let a_backshaped = a_broadcasted.reshape(output_shape);
         let da_backshaped = da_broadcasted.reshape(output_shape);
         (a_backshaped, da_backshaped).into()
