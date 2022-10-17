@@ -255,6 +255,7 @@ impl Graph {
     fn eliminate_moves(&mut self) {
         for node_id in self.ops_sorted.iter().copied() {
             if let Op::Unary(UnaryOp::Mov) = &self.ops[node_id].op {
+                assert_eq!(self.ops[node_id].op, Op::Unary(UnaryOp::Mov));
                 // attempt to adjust the incoming edge view to match the target shape naturally
                 if let Some(in_edge_ref) = self.ops.edges_directed(node_id, Incoming).only(){
                     let in_edge_id = in_edge_ref.id();
@@ -296,9 +297,14 @@ impl Graph {
                         }
                         self.ops.remove_node(node_id);
                     }
-                };
-            }else{
-                eprintln!("Cannot eliminate move node with no incoming edges: {:?}", &self.ops[node_id]);
+                }else{
+                    eprintln!("Cannot eliminate move node {:?} with no incoming edges: {:?}", node_id, &self.ops[node_id]);
+                    for e in self.ops.edges(node_id) {
+                        eprintln!("from {:?} to {:?}", e.source(), e.target());
+                    }
+                    self.write_dot_file(KernelDotOutput::Cluster, "fail.dot")
+
+                }
             }
         }
     }
