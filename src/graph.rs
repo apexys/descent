@@ -503,35 +503,39 @@ impl Graph {
                     .collect();
 
                 // emit the op
-                let op = match ops[node_id].op {
-                    Op::Unary(op) => PerElementKernelOp::Unary { op, args: args[0] },
-                    Op::Binary(op) => PerElementKernelOp::Binary {
-                        op,
-                        args: args[..2].try_into().unwrap(),
-                    },
-                    Op::CompareAndSelect(compare_mode) => PerElementKernelOp::CompareAndSelect {
-                        compare_mode,
-                        args: args[..4].try_into().unwrap(),
-                    },
-                    Op::Gather { axis } => PerElementKernelOp::Gather {
-                        shape: ops[node_id].shape,
-                        axis,
-                        input_index: args[0],
-                        arg: args[1],
-                    },
-                    _ => panic!("unexpected op type"),
-                };
-                let op_index = kernel.ops.len();
-                kernel.ops.push(op);
-                member_op_index.insert(node_id, op_index);
+                if args.len() > 0 {
+                    let op = match ops[node_id].op {
+                        Op::Unary(op) => PerElementKernelOp::Unary { op, args: args[0] },
+                        Op::Binary(op) => PerElementKernelOp::Binary {
+                            op,
+                            args: args[..2].try_into().unwrap(),
+                        },
+                        Op::CompareAndSelect(compare_mode) => PerElementKernelOp::CompareAndSelect {
+                            compare_mode,
+                            args: args[..4].try_into().unwrap(),
+                        },
+                        Op::Gather { axis } => PerElementKernelOp::Gather {
+                            shape: ops[node_id].shape,
+                            axis,
+                            input_index: args[0],
+                            arg: args[1],
+                        },
+                        _ => panic!("unexpected op type"),
+                    };
+                    let op_index = kernel.ops.len();
+                    kernel.ops.push(op);
+                    member_op_index.insert(node_id, op_index);
 
-                // store the result if necessary
-                if ops
-                    .neighbors_directed(node_id, Outgoing)
-                    .any(|other_id| ops[other_id].cluster_id != Some(cluster_id))
-                {
-                    kernel.outputs.push(op_index);
-                    outputs.push(ClusterOutput::new(node_id));
+                    // store the result if necessary
+                    if ops
+                        .neighbors_directed(node_id, Outgoing)
+                        .any(|other_id| ops[other_id].cluster_id != Some(cluster_id))
+                    {
+                        kernel.outputs.push(op_index);
+                        outputs.push(ClusterOutput::new(node_id));
+                    }
+                }else{
+                    eprintln!("Node with no inputs: {:?}", ops[node_id]);
                 }
             }
         }
