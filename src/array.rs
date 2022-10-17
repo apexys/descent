@@ -847,6 +847,13 @@ impl<'s> DualArray<'s> {
         (a_backshaped, da_backshaped).into()
     }
 
+    pub fn crop(self, margin: usize) -> Self{
+        let (a, da) = self.into_inner();
+        let b = a.unpad_image(margin);
+        let db = da.unpad_image(margin);
+        (b, db).into()
+    }
+
     pub fn sin(self) -> Self {
         let (a, da) = self.into_inner();
 
