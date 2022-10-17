@@ -858,8 +858,8 @@ impl<'s> DualArray<'s> {
         input_offsets[2] = left as isize;
 
         let mut output_shape = input_shape;
-        output_shape[1] -= (top + bottom) as usize;
-        output_shape[2] -= (left + right) as usize;
+        output_shape[1] -= top + bottom;
+        output_shape[2] -= left + right;
 
         let view = View{
             input_shape: a.shape(),
