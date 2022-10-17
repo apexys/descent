@@ -847,10 +847,29 @@ impl<'s> DualArray<'s> {
         (a_backshaped, da_backshaped).into()
     }
 
-    pub fn crop(self, margin: usize) -> Self{
+    pub fn crop(self, left: isize, top: isize, right: isize, bottom: isize) -> Self{
         let (a, da) = self.into_inner();
-        let b = a.unpad_image(margin);
-        let db = da.unpad_image(margin);
+
+        let input_shape = a.shape();
+        assert_eq!(input_shape.len(), 4);
+
+        let mut input_offsets: TinyVec<[isize; MAX_DIM]> = std::iter::repeat(0).take(input_shape.len()).collect();
+        input_offsets[1] = top;
+        input_offsets[2] = left;
+
+        let mut output_shape = input_shape;
+        output_shape[1] -= (top + bottom) as usize;
+        output_shape[2] -= (left + right) as usize;
+
+        let view = View{
+            input_shape: a.shape(),
+            input_offsets,
+            output_mapping: (0..input_shape.len()).map(|i| input_shape.identity_mapping(Axis::from_index(i))).collect(),
+            output_shape
+        };
+
+        let b = a.view(view);
+        let db = da.view(view);
         (b, db).into()
     }
 
