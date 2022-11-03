@@ -324,8 +324,6 @@ impl Graph {
                     for e in self.ops.edges(node_id) {
                         eprintln!("from {:?} to {:?}", e.source(), e.target());
                     }
-                    self.write_dot_file(KernelDotOutput::Cluster, "fail.dot")
-
                 }
             }
         }
