@@ -114,7 +114,6 @@ macro_rules! implement_array_common {
                     state
                         .ops
                         .add_edge(self.node_id, node_id, OpEdge { arg: 0, view });
-                    eprintln!("Added edge to parent node {:?}", self.node_id);
                     $array {
                         node_id,
                         scope: self.scope,
