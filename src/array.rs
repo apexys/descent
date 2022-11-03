@@ -114,6 +114,7 @@ macro_rules! implement_array_common {
                     state
                         .ops
                         .add_edge(self.node_id, node_id, OpEdge { arg: 0, view });
+                    eprintln!("Added edge to parent node {:?}", self.node_id);
                     $array {
                         node_id,
                         scope: self.scope,
@@ -1186,6 +1187,46 @@ impl<'s> DualArray<'s> {
         db.accumulate(dc.limit_axis(axis, length..));
 
         (c, dc).into()
+    }
+
+    pub fn concat_image_channels(self, other: impl IntoDualArray<'s>) -> Self{
+        let other = other.into_dual_array(self.scope);
+
+        assert_eq!(self.shape().len(), 4);
+        assert_eq!(other.shape().len(), 4);
+
+        let my_shape = self.shape();
+        let other_shape = other.shape();
+
+        let (a, da) = self.into_inner();
+        let (b, db) = other.into_inner();
+
+        let a_padded = a.pad(-1, 0, other_shape[3]);
+        let b_padded = b.pad(-1, my_shape[3], 0);
+
+        let combined_ab = a_padded + b_padded;
+
+        let input_shape = combined_ab.shape();
+        let view = View{
+            input_shape,
+            input_offsets: std::iter::repeat(0).take(input_shape.len()).collect(),
+            output_mapping: (0..input_shape.len()).map(|i| input_shape.identity_mapping(Axis::from_index(i))).collect(),
+            output_shape: input_shape
+        };
+
+        let combined_ab_view = combined_ab.view(view);
+
+        let da_padded = da.pad(-1, 0, other_shape[3]);
+        let db_padded = db.pad(-1, my_shape[3], 0);
+        
+        let combined_dadb = da_padded + db_padded;
+
+        let combined_dadb_view = combined_dadb.view(view);
+
+        let combined_dual: DualArray = (combined_ab_view, combined_dadb_view).into();
+
+       combined_dual
+
     }
 }
 
