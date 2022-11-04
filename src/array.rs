@@ -837,14 +837,14 @@ impl<'s> DualArray<'s> {
         let a_reshaped = a.reshape([input_shape[0], input_shape[1], 1, input_shape[2], 1, input_shape[3]]);
         let a_broadcasted = a_reshaped.broadcast([input_shape[0], input_shape[1], y_grow_factor, input_shape[2], x_grow_factor, input_shape[3]]);
         let mut output_shape = input_shape;
-        output_shape[2] *= y_grow_factor;
-        output_shape[1] *= x_grow_factor;
+        output_shape[1] *= y_grow_factor;
+        output_shape[2] *= x_grow_factor;
         let a_backshaped = a_broadcasted.reshape(output_shape);
         let (b, db) = a_backshaped.with_empty_grad();
         //We need to add all pixels we upsampled into the pixel they came from
         //We can do this through sum-pooling with stride
         //Following code basically copied from the max-pooling implementation
-        let windows = db.image_to_windows((x_grow_factor, y_grow_factor), (x_grow_factor, y_grow_factor), 1);
+        let windows = db.image_to_windows((y_grow_factor, x_grow_factor), (y_grow_factor, x_grow_factor), 1);
         let [m, output_h, output_w, groups, filter_h, filter_w, group_nc]: [usize; 7] =
             windows.shape().try_into().unwrap();
 
