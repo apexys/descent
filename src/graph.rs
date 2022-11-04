@@ -107,14 +107,6 @@ pub struct Graph {
     pub(crate) clusters_sorted: Vec<ClusterId>,
 }
 
-fn write_dot(graph: &Graph, path: &str){
-    let mut cmd = std::process::Command::new("dot").arg("-Tsvg").stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
-    let mut stdin = cmd.stdin.take().unwrap();
-    graph.write_dot(KernelDotOutput::Cluster, &mut stdin).unwrap();
-    drop(stdin);
-    std::fs::write(path, cmd.wait_with_output().unwrap().stdout).unwrap();
-}
-
 impl Graph {
     pub(crate) fn new(parameters: SharedParameters, ops: OpGraph) -> Self {
         let mut graph = Self {
@@ -125,37 +117,23 @@ impl Graph {
             clusters_sorted: Vec::new(),
         };
 
-        write_dot(&graph, "original.svg");
-
         graph.rebuild_ordering();
         graph.eliminate_dead_code();
-
-        write_dot(&graph, "after_dead_code.svg");
 
         graph.rebuild_ordering();
         graph.eliminate_moves();
 
-        write_dot(&graph, "after_move_elimination.svg");
-
         graph.rebuild_ordering();
         graph.simplify_arithmetic();
-
-        write_dot(&graph, "after_simplify_arithmetic.svg");
 
         graph.rebuild_ordering();
         graph.eliminate_common_subgraphs();
 
-        write_dot(&graph, "after_eliminate_common_subgraphs.svg");
-
         graph.rebuild_ordering();
         graph.make_built_ins_and_literals_unique();
 
-        write_dot(&graph, "after_make_built_ins_and_literals_unique.svg");
-
         graph.rebuild_ordering();
         graph.build_clusters();
-
-        write_dot(&graph, "after_build_clusters.svg");
 
         graph
     }
