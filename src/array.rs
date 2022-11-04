@@ -834,17 +834,32 @@ impl<'s> DualArray<'s> {
         let (a, da) = self.into_inner();
         let input_shape = a.shape();
         assert_eq!(input_shape.len(), 4);
-        assert_eq!(a.shape(), da.shape());
         let a_reshaped = a.reshape([input_shape[0], input_shape[1], 1, input_shape[2], 1, input_shape[3]]);
-        let da_reshaped = da.reshape([input_shape[0], input_shape[1], 1, input_shape[2], 1, input_shape[3]]);
         let a_broadcasted = a_reshaped.broadcast([input_shape[0], input_shape[1], y_grow_factor, input_shape[2], x_grow_factor, input_shape[3]]);
-        let da_broadcasted = da_reshaped.broadcast([input_shape[0], input_shape[1], y_grow_factor, input_shape[2], x_grow_factor, input_shape[3]]);
         let mut output_shape = input_shape;
         output_shape[2] *= y_grow_factor;
         output_shape[1] *= x_grow_factor;
         let a_backshaped = a_broadcasted.reshape(output_shape);
-        let da_backshaped = da_broadcasted.reshape(output_shape);
-        (a_backshaped, da_backshaped).into()
+        let (b, db) = a_backshaped.with_empty_grad();
+        //We need to add all pixels we upsampled into the pixel they came from
+        //We can do this through sum-pooling with stride
+        //Following code basically copied from the max-pooling implementation
+        let windows = db.image_to_windows((x_grow_factor, y_grow_factor), (x_grow_factor, y_grow_factor), 1);
+        let [m, output_h, output_w, groups, filter_h, filter_w, group_nc]: [usize; 7] =
+            windows.shape().try_into().unwrap();
+
+        let summed = windows
+            .reshape([
+                m * output_h * output_w * groups,
+                filter_h * filter_w,
+                group_nc,
+            ])
+            .reduce_sum(1, true)
+            .reshape([m, output_h, output_w, groups * group_nc]);
+
+        da.accumulate(summed);
+
+        (b, db).into()
     }
 
     pub fn crop(self, left: usize, top: usize, right: usize, bottom: usize) -> Self{
@@ -853,6 +868,7 @@ impl<'s> DualArray<'s> {
         let input_shape = a.shape();
         assert_eq!(input_shape.len(), 4);
 
+        //Compute crop shape
         let mut input_offsets: TinyVec<[isize; MAX_DIM]> = std::iter::repeat(0).take(input_shape.len()).collect();
         input_offsets[1] = top as isize;
         input_offsets[2] = left as isize;
@@ -861,15 +877,19 @@ impl<'s> DualArray<'s> {
         output_shape[1] -= top + bottom;
         output_shape[2] -= left + right;
 
+        //Crop input to shape
         let view = View{
             input_shape: a.shape(),
             input_offsets,
             output_mapping: (0..input_shape.len()).map(|i| input_shape.identity_mapping(Axis::from_index(i))).collect(),
             output_shape
         };
+        let (b, db) = a.view(view).with_empty_grad();
 
-        let b = a.view(view);
-        let db = da.view(view);
+        //We also need to pad the gradient by the crop we just did
+        let padded = db.pad(1, top, bottom).pad(2, left, right);
+        da.accumulate(padded);
+        
         (b, db).into()
     }
 

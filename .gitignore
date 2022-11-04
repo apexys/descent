@@ -5,3 +5,4 @@
 /data/mnist/*.gz
 /temp
 *.dot
+*.svg
