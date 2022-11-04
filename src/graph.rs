@@ -125,37 +125,38 @@ impl Graph {
             clusters_sorted: Vec::new(),
         };
 
-        write_dot(&graph, "original.svg");
+        //write_dot(&graph, "original.svg");
 
         graph.rebuild_ordering();
         graph.eliminate_dead_code();
 
-        write_dot(&graph, "after_dead_code.svg");
+        //write_dot(&graph, "after_dead_code.svg");
 
         graph.rebuild_ordering();
         graph.eliminate_moves();
 
-        write_dot(&graph, "after_move_elimination.svg");
+        //write_dot(&graph, "after_move_elimination.svg");
 
         graph.rebuild_ordering();
         graph.simplify_arithmetic();
 
-        write_dot(&graph, "after_simplify_arithmetic.svg");
+        //write_dot(&graph, "after_simplify_arithmetic.svg");
 
         graph.rebuild_ordering();
         graph.eliminate_common_subgraphs();
 
-        write_dot(&graph, "after_eliminate_common_subgraphs.svg");
+        //write_dot(&graph, "after_eliminate_common_subgraphs.svg");
 
         graph.rebuild_ordering();
         graph.make_built_ins_and_literals_unique();
 
-        write_dot(&graph, "after_make_built_ins_and_literals_unique.svg");
+        //write_dot(&graph, "after_make_built_ins_and_literals_unique.svg");
 
         graph.rebuild_ordering();
         graph.build_clusters();
 
-        write_dot(&graph, "after_build_clusters.svg");
+        //write_dot(&graph, "after_build_clusters.svg");
+        //write_dot(&graph, "optimized.svg");
 
         graph
     }
