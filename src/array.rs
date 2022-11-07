@@ -528,6 +528,23 @@ impl<'s> Array<'s> {
         self.view(shape.padded_view(axis, before, after))
     }
 
+    pub fn zero_pad(self, axis: impl IntoAxis, before: usize, after: usize) -> Self{
+        if before + after == 0{
+            return self;
+        }
+        let axis = axis.into_axis(self.shape());
+        let zero = 0f32.into_array(self.scope);
+        let mut before_shape = self.shape();
+        before_shape[axis] = before;
+        let mut after_shape = self.shape();
+        after_shape[axis] = after;
+        let before_size = before_shape.element_count();
+        let after_size = after_shape.element_count();
+        let zero_before = zero.pad(0, before_size - 1, 0).reshape(before_shape);
+        let zero_after = zero.pad(0, 0, after_size -1).reshape(after_shape);
+        zero_before.concat(self, axis).concat(zero_after, axis)
+    }
+
     pub(crate) fn unpad(self, axis: impl IntoAxis, pad: usize) -> Self {
         if pad == 0 {
             return self;
@@ -887,7 +904,7 @@ impl<'s> DualArray<'s> {
         let (b, db) = a.view(view).with_empty_grad();
 
         //We also need to pad the gradient by the crop we just did
-        let padded = db.pad(1, top, bottom).pad(2, left, right);
+        let padded = db.zero_pad(1, top, bottom).zero_pad(2, left, right);
         da.accumulate(padded);
         
         (b, db).into()
