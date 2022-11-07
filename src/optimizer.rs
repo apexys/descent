@@ -80,8 +80,7 @@ impl Adam {
         let t = scope.update_parameter_value(&t_param, |t| t + 1.0);
         state.push(t_param);
 
-        let alpha = learning_rate.into_array(scope) * (1.0 - (beta2.ln() * t).exp()).sqrt()
-            / (1.0 - (beta1.ln() * t).exp());
+        let alpha = learning_rate.into_array(scope);
 
         for param in parameters.iter() {
             let shape = param.shape();
@@ -94,7 +93,10 @@ impl Adam {
             state.push(m_param);
             state.push(v_param);
 
-            scope.update_parameter_value(param, |theta| theta - alpha * m / (v.sqrt() + epsilon));
+            scope.update_parameter_value(param, |theta| 
+                theta - 
+                    alpha * 
+                    m / (1.0 - (beta1.ln() * t).exp()) / (v.sqrt() / (1.0 - (beta2.ln() * t).exp()).sqrt() + epsilon));
         }
 
         let tmp = Self { state };
