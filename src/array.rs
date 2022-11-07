@@ -519,7 +519,7 @@ impl<'s> Array<'s> {
         }
     }
 
-    pub(crate) fn pad(self, axis: impl IntoAxis, before: usize, after: usize) -> Self {
+    pub fn pad(self, axis: impl IntoAxis, before: usize, after: usize) -> Self {
         if before + after == 0 {
             return self;
         }
